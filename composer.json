@@ -1,0 +1,30 @@
+{
+    "name": "corex/container",
+    "type": "library",
+    "description": "Container (Dependency Injection, PSR-11, tags)",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "CoRex",
+            "email": "dev@corex.dk"
+        }
+    ],
+    "require": {
+        "php": "^7.2",
+        "psr/container": "^1.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.5",
+        "corex/helpers": "^2.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "CoRex\\Container\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\CoRex\\Container\\": "tests"
+        }
+    }
+}
