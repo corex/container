@@ -13,8 +13,6 @@
 - Support for calling method on definitions which implements specific interface.
 - Support for calling method on definitions which has specific tag.
 - Not depending on other packages in production (except psr/container).
-- Strict Coding (strict_types=1).
-- 100% Code Coverage.
 
 
 ### A few examples
