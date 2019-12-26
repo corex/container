@@ -38,10 +38,11 @@ Type-hint will still be resolved if they are bound.
 ```php
 $container = Container::getInstance();
 
-$container->bind(MyClassInterface::class, MyClass::class);
+$container->bind('myClass', MyClass::class)
+    ->setDefaultParameter('firstname', 'Roger');
 
-$myClass = $container->make(MyClass::class, [
-    'test' => 'my.value'
+$myClass = $container->make('myClass', [
+    'lastname' => 'Moore'
 ]);
 ```
 
