@@ -31,7 +31,7 @@ $container = Container::getInstance();
 ```php
 $myClass = Container::getInstance()->make(MyClass::class);
 ```
-Type-hint will still be resolved if they are bound.
+Type-hints will be resolved if they are bound in advance.
 
 
 #### Make a class with binding and parameters.
