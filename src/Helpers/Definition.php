@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace CoRex\Container\Helpers;
 
-use CoRex\Container\Exceptions\ContainerException;
+use Closure;
 
 class Definition
 {
@@ -27,20 +27,14 @@ class Definition
      * Definition.
      *
      * @param string $abstract
-     * @param string $concrete
+     * @param string|Closure $concrete
      * @param bool $shared
-     * @throws ContainerException
      */
-    public function __construct(string $abstract, string $concrete, bool $shared)
+    public function __construct(string $abstract, $concrete, bool $shared)
     {
         $this->abstract = $abstract;
         $this->concrete = $concrete;
         $this->shared = $shared;
-
-        // CHeck if concrete class exists.
-        if (!class_exists($concrete)) {
-            throw new ContainerException('Class ' . $concrete . ' does not exist.');
-        }
     }
 
     /**
@@ -66,11 +60,21 @@ class Definition
     /**
      * Get instance class.
      *
-     * @return string
+     * @return string|Closure
      */
-    public function getConcrete(): string
+    public function getConcrete()
     {
         return $this->concrete;
+    }
+
+    /**
+     * Is closure.
+     *
+     * @return bool
+     */
+    public function isClosure(): bool
+    {
+        return is_callable($this->concrete);
     }
 
     /**
@@ -81,6 +85,10 @@ class Definition
      */
     public function extendsClass(string $class): bool
     {
+        if ($this->isClosure()) {
+            return false;
+        }
+
         return in_array($class, array_values(class_parents($this->concrete)));
     }
 
@@ -92,6 +100,10 @@ class Definition
      */
     public function implementsInterface(string $interface): bool
     {
+        if ($this->isClosure()) {
+            return false;
+        }
+
         return in_array($interface, class_implements($this->concrete));
     }
 

@@ -4,15 +4,16 @@ declare(strict_types=1);
 
 namespace CoRex\Container;
 
-use CoRex\Container\Exceptions\ContainerException;
+use Closure;
 use CoRex\Container\Exceptions\NotFoundException;
 use CoRex\Container\Helpers\Definition;
-use CoRex\Container\Helpers\Parameter;
+use Exception;
 use Psr\Container\ContainerInterface;
 use ReflectionClass;
-use ReflectionException;
+use ReflectionFunction;
 use ReflectionObject;
 use ReflectionParameter;
+use Throwable;
 
 class Container implements ContainerInterface
 {
@@ -60,24 +61,25 @@ class Container implements ContainerInterface
      * Bind.
      *
      * @param string $abstract
-     * @param string|null $concrete
+     * @param string|Closure|null $concrete
      * @param bool $shared
      * @return Definition
-     * @throws ContainerException
+     * @throws NotFoundException
      */
-    public function bind(string $abstract, ?string $concrete = null, bool $shared = false): Definition
+    public function bind(string $abstract, $concrete = null, bool $shared = false): Definition
     {
-        // Check if already bound.
-        if ($this->has($abstract)) {
-            throw new ContainerException('Abstract ' . $abstract . ' already bound.');
-        }
-
         if ($concrete === null) {
             $concrete = $abstract;
         }
 
         $definition = new Definition($abstract, $concrete, $shared);
         $this->definitions[$abstract] = $definition;
+
+        // Check if already bound.
+        if ($this->resolved($abstract)) {
+            unset($this->instances[$abstract]);
+            $this->make($abstract);
+        }
 
         return $definition;
     }
@@ -86,11 +88,11 @@ class Container implements ContainerInterface
      * Bind singleton.
      *
      * @param string $abstract
-     * @param string|null $concrete
+     * @param string|Closure|null $concrete
      * @return Definition
-     * @throws ContainerException
+     * @throws NotFoundException
      */
-    public function bindSingleton(string $abstract, ?string $concrete = null): Definition
+    public function bindSingleton(string $abstract, $concrete = null): Definition
     {
         return $this->bind($abstract, $concrete, true);
     }
@@ -99,11 +101,11 @@ class Container implements ContainerInterface
      * Bind shared.
      *
      * @param string $abstract
-     * @param string|null $concrete
+     * @param string|Closure|null $concrete
      * @return Definition
-     * @throws ContainerException
+     * @throws NotFoundException
      */
-    public function bindShared(string $abstract, ?string $concrete = null): Definition
+    public function bindShared(string $abstract, $concrete = null): Definition
     {
         return $this->bind($abstract, $concrete, true);
     }
@@ -140,8 +142,7 @@ class Container implements ContainerInterface
      * @param string $abstractOrConcrete
      * @param mixed[] $parameters [name => value].
      * @return object
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function make(string $abstractOrConcrete, array $parameters = []): object
     {
@@ -159,23 +160,38 @@ class Container implements ContainerInterface
             $concrete = $abstractOrConcrete;
         }
 
-        // CHeck if concrete class exists.
-        if (!class_exists($concrete)) {
-            throw new ContainerException('Class ' . $concrete . ' does not exist.');
-        }
-
         // If shared and has instance, return it.
-        if ($isShared && $this->hasInstance($abstractOrConcrete)) {
+        if ($isShared && $this->resolved($abstractOrConcrete)) {
             return $this->instances[$abstractOrConcrete];
         }
 
-        // Resolve and create instance.
-        $reflectionClass = new ReflectionClass($concrete);
-        $constructor = $reflectionClass->getConstructor();
-        $reflectionParameters = $constructor !== null ? $constructor->getParameters() : [];
-        $definitionParameters = $definition !== null ? $definition->getParameters() : [];
-        $resolvedParameters = $this->resolve($reflectionParameters, $parameters, $definitionParameters);
-        $instance = $this->newInstance($concrete, $resolvedParameters);
+        if (is_callable($concrete)) {
+            // Resolve and create instance.
+            try {
+                $reflectionFunction = new ReflectionFunction($concrete);
+                $reflectionParameters = $reflectionFunction->getParameters();
+                $resolvedParameters = $this->resolve($reflectionParameters, $parameters);
+                $instance = call_user_func_array($concrete, $resolvedParameters);
+
+                // Validate object.
+                if (!is_object($instance)) {
+                    throw new Exception('Class ' . $abstractOrConcrete . ' does not exist.');
+                }
+            } catch (Throwable $throwable) {
+                throw new NotFoundException($throwable->getMessage());
+            }
+        } else {
+            // Resolve and create instance.
+            try {
+                $reflectionClass = new ReflectionClass($concrete);
+                $constructor = $reflectionClass->getConstructor();
+                $reflectionParameters = $constructor !== null ? $constructor->getParameters() : [];
+                $resolvedParameters = $this->resolve($reflectionParameters, $parameters, $abstractOrConcrete);
+                $instance = $this->newInstance($concrete, $resolvedParameters);
+            } catch (Throwable $throwable) {
+                throw new NotFoundException($throwable->getMessage());
+            }
+        }
 
         // If shared, store instance.
         if ($isShared) {
@@ -188,13 +204,15 @@ class Container implements ContainerInterface
     /**
      * @inheritDoc
      * @throws NotFoundException
-     * @throws ContainerException
-     * @throws ReflectionException
      */
     public function get($id)
     {
-        if ($this->has($id)) {
-            return $this->make($id);
+        try {
+            if ($this->has($id)) {
+                return $this->make($id);
+            }
+        } catch (Throwable $throwable) {
+            // Do nothing since NotFoundException is thrown later.
         }
 
         throw new NotFoundException($id);
@@ -215,8 +233,7 @@ class Container implements ContainerInterface
      * @param string $method
      * @param mixed[] $parameters [name => value].
      * @return mixed
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function call($abstractOrObject, string $method, array $parameters = [])
     {
@@ -224,9 +241,13 @@ class Container implements ContainerInterface
             $abstractOrObject = $this->make($abstractOrObject);
         }
 
-        $reflectionObject = new ReflectionObject($abstractOrObject);
-        $reflectionMethod = $reflectionObject->getMethod($method);
-        $reflectionParameters = $reflectionMethod->getParameters();
+        try {
+            $reflectionObject = new ReflectionObject($abstractOrObject);
+            $reflectionMethod = $reflectionObject->getMethod($method);
+            $reflectionParameters = $reflectionMethod->getParameters();
+        } catch (Throwable $throwable) {
+            throw new NotFoundException($throwable->getMessage());
+        }
 
         $resolvedParameters = $this->resolve($reflectionParameters, $parameters);
 
@@ -244,7 +265,7 @@ class Container implements ContainerInterface
             unset($this->definitions[$abstract]);
         }
 
-        if ($this->hasInstance($abstract)) {
+        if ($this->resolved($abstract)) {
             unset($this->instances[$abstract]);
         }
     }
@@ -295,24 +316,13 @@ class Container implements ContainerInterface
     }
 
     /**
-     * Has instance.
-     *
-     * @param string $abstract
-     * @return bool
-     */
-    public function hasInstance(string $abstract): bool
-    {
-        return array_key_exists($abstract, $this->instances) && is_object($this->instances[$abstract]);
-    }
-
-    /**
-     * Set instance.
+     * Set.
      *
      * @param string $abstract
      * @param object $object
-     * @throws ContainerException
+     * @throws NotFoundException
      */
-    public function setInstance(string $abstract, object $object): void
+    public function set(string $abstract, object $object): void
     {
         if (!$this->has($abstract)) {
             $this->bindSingleton($abstract, get_class($object));
@@ -320,6 +330,17 @@ class Container implements ContainerInterface
 
         $this->getDefinition($abstract)->setShared();
         $this->instances[$abstract] = $object;
+    }
+
+    /**
+     * Resolved.
+     *
+     * @param string $abstract
+     * @return bool
+     */
+    public function resolved(string $abstract): bool
+    {
+        return array_key_exists($abstract, $this->instances) && is_object($this->instances[$abstract]);
     }
 
     /**
@@ -348,8 +369,7 @@ class Container implements ContainerInterface
      * @param string $method
      * @param mixed[] $parameters
      * @param bool $make
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function runOnExtends(string $extends, string $method, array $parameters = [], bool $make = false): void
     {
@@ -376,8 +396,7 @@ class Container implements ContainerInterface
      * @param string $method
      * @param mixed[] $parameters
      * @param bool $make
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function runOnInterface(string $interface, string $method, array $parameters = [], bool $make = false): void
     {
@@ -404,8 +423,7 @@ class Container implements ContainerInterface
      * @param string $method
      * @param mixed[] $parameters
      * @param bool $make
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function runOnTag(string $tag, string $method, array $parameters = [], bool $make = false): void
     {
@@ -448,28 +466,30 @@ class Container implements ContainerInterface
      *
      * @param ReflectionParameter[] $reflectionParameters
      * @param mixed[] $parameters
-     * @param Parameter[] $definitionParameters
+     * @param string|null $abstract
      * @return mixed[] [name => value]
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
-    private function resolve(
-        array $reflectionParameters,
-        array $parameters = [],
-        array $definitionParameters = []
-    ): array {
+    private function resolve(array $reflectionParameters, array $parameters = [], ?string $abstract = null): array
+    {
         if (count($reflectionParameters) === 0) {
             return [];
         }
 
-        // Resolve typehint parameters.
+        // Get definition parameters.
+        $definitionParameters = [];
+        if ($abstract !== null) {
+            $definition = $this->getDefinition($abstract);
+            if ($definition !== null) {
+                $definitionParameters = $definition->getParameters();
+            }
+        }
+
+        // Resolve type-hint parameters.
         $resolvedParameters = [];
         foreach ($reflectionParameters as $reflectionParameter) {
             $name = $reflectionParameter->getName();
             $hasDefaultValue = $reflectionParameter->isDefaultValueAvailable();
-            $defaultValue = $hasDefaultValue
-                ? $reflectionParameter->getDefaultValue()
-                : null;
 
             // Extract type hint.
             $typeHint = null;
@@ -481,13 +501,15 @@ class Container implements ContainerInterface
             // Handle values in order typehint, specified parameters, default value.
             $value = null;
             if ($typeHint !== null) {
-                $value = $this->make($typeHint);
-            } elseif ($hasDefaultValue) {
-                if (array_key_exists($name, $definitionParameters) && !$definitionParameters[$name]->isForced()) {
-                    $value = $definitionParameters[$name]->getValue();
+                if ($typeHint === ContainerInterface::class) {
+                    $value = $this;
                 } else {
-                    $value = $defaultValue;
+                    $value = $this->make($typeHint);
                 }
+            } elseif (array_key_exists($name, $definitionParameters) && !$definitionParameters[$name]->isForced()) {
+                $value = $definitionParameters[$name]->getValue();
+            } elseif ($hasDefaultValue) {
+                $value = call_user_func([$reflectionParameter, 'getDefaultValue']);
             }
 
             // Override parameter if specified.
@@ -520,15 +542,14 @@ class Container implements ContainerInterface
      * @param string $abstract
      * @param bool $make
      * @return object
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     private function getAbstractInstance(string $abstract, bool $make = false): ?object
     {
         $instance = null;
 
         // Get instance if exists.
-        if ($this->hasInstance($abstract)) {
+        if ($this->resolved($abstract)) {
             $instance = $this->instances[$abstract];
         }
 
@@ -546,7 +567,7 @@ class Container implements ContainerInterface
      * @param string $class
      * @param mixed[] $params
      * @return object
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     private function newInstance(string $class, array $params): object
     {
@@ -554,8 +575,8 @@ class Container implements ContainerInterface
             $reflectionClass = new ReflectionClass($class);
 
             return $reflectionClass->newInstanceArgs($params);
-        } catch (ReflectionException $e) {
-            throw new ContainerException($e->getMessage(), $e->getCode(), $e);
+        } catch (Throwable $throwable) {
+            throw new NotFoundException($throwable->getMessage());
         }
     }
 }

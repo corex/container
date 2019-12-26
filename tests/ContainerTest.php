@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\CoRex\Container;
 
 use CoRex\Container\Container;
-use CoRex\Container\Exceptions\ContainerException;
 use CoRex\Container\Exceptions\NotFoundException;
 use CoRex\Container\Helpers\Definition;
 use CoRex\Helpers\Obj;
@@ -15,6 +14,7 @@ use Tests\CoRex\Container\HelpersClasses\BadClass;
 use Tests\CoRex\Container\HelpersClasses\BaseTest;
 use Tests\CoRex\Container\HelpersClasses\BaseTestInterface;
 use Tests\CoRex\Container\HelpersClasses\Test;
+use Tests\CoRex\Container\HelpersClasses\TestContainerInjected;
 use Tests\CoRex\Container\HelpersClasses\TestDependencyInjection;
 use Tests\CoRex\Container\HelpersClasses\TestInjected;
 use Tests\CoRex\Container\HelpersClasses\TestInjectedInterface;
@@ -48,7 +48,7 @@ class ContainerTest extends TestCase
     /**
      * Test clear.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testClear(): void
     {
@@ -61,7 +61,7 @@ class ContainerTest extends TestCase
     /**
      * Test bind.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testBind(): void
     {
@@ -72,37 +72,28 @@ class ContainerTest extends TestCase
     }
 
     /**
-     * Test bind concrete not found.
-     *
-     * @throws ContainerException
-     */
-    public function testBindConcreteNotFound(): void
-    {
-        $check = md5((string)mt_rand(1, 100000));
-        $this->expectException(ContainerException::class);
-        $this->expectExceptionMessage('Class ' . $check . ' does not exist.');
-        $container = $this->container();
-        $container->bind($check);
-    }
-
-    /**
      * Test bind already bound.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testBindAlreadyBound(): void
     {
-        $this->expectException(ContainerException::class);
-        $this->expectExceptionMessage('Abstract ' . Test::class . ' already bound.');
         $container = $this->container();
-        $container->bind(Test::class);
-        $container->bind(Test::class);
+
+        $container->bindShared('test', Test::class);
+        $container->make('test');
+
+        $this->assertInstanceOf(Test::class, $container->get('test'));
+
+        $container->bindShared('test', TestInjected::class);
+
+        $this->assertInstanceOf(TestInjected::class, $container->get('test'));
     }
 
     /**
      * Test bind singleton.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testBindSingleton(): void
     {
@@ -116,7 +107,7 @@ class ContainerTest extends TestCase
     /**
      * Test bind shared.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testBindShared(): void
     {
@@ -130,7 +121,7 @@ class ContainerTest extends TestCase
     /**
      * Test is shared.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testIsShared(): void
     {
@@ -155,7 +146,7 @@ class ContainerTest extends TestCase
     /**
      * Test is singleton.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testIsSingleton(): void
     {
@@ -171,8 +162,7 @@ class ContainerTest extends TestCase
     /**
      * Test make.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testMake(): void
     {
@@ -185,8 +175,7 @@ class ContainerTest extends TestCase
     /**
      * Test make with singleton.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testMakeWithSingleton(): void
     {
@@ -204,15 +193,102 @@ class ContainerTest extends TestCase
     }
 
     /**
+     * Test make closure.
+     *
+     * @throws NotFoundException
+     */
+    public function testMakeClosure(): void
+    {
+        $container = $this->container();
+        $container->bindSingleton(
+            'test',
+            function () {
+                return new Test();
+            }
+        );
+        $instance = $container->make('test');
+        $this->assertInstanceOf(Test::class, $instance);
+    }
+
+    /**
+     * Test make container injected.
+     *
+     * @throws NotFoundException
+     * @throws ReflectionException
+     */
+    public function testMakeContainerInjected(): void
+    {
+        $container = $this->container();
+        $container->bindSingleton('test', TestContainerInjected::class);
+
+        $instance = $container->make('test');
+
+        $this->assertInstanceOf(TestContainerInjected::class, $instance);
+        $this->assertInstanceOf(Container::class, Obj::getProperty('container', $instance));
+    }
+
+    /**
+     * Test make closure class not found.
+     *
+     * @throws NotFoundException
+     */
+    public function testMakeClosureClassNotFound(): void
+    {
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('Class test does not exist.');
+        $container = $this->container();
+        $container->bindSingleton(
+            'test',
+            function () {
+                return 'unknown.class';
+            }
+        );
+        $container->make('test');
+    }
+
+    /**
+     * Test closure extends.
+     *
+     * @throws NotFoundException
+     */
+    public function testClosureExtends(): void
+    {
+        $container = $this->container();
+        $container->bindSingleton(
+            'test',
+            function () {
+                return new Test();
+            }
+        );
+        $this->assertFalse($container->getDefinition('test')->extendsClass(BaseTest::class));
+    }
+
+    /**
+     * Test closure implements.
+     *
+     * @throws NotFoundException
+     */
+    public function testClosureImplements(): void
+    {
+        $container = $this->container();
+        $container->bindSingleton(
+            'test',
+            function () {
+                return new Test();
+            }
+        );
+        $this->assertFalse($container->getDefinition('test')->implementsInterface(BaseTestInterface::class));
+    }
+
+    /**
      * Test make concrete not found.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testMakeConcreteNotFound(): void
     {
         $check = md5((string)mt_rand(1, 100000));
-        $this->expectException(ContainerException::class);
+        $this->expectException(NotFoundException::class);
         $this->expectExceptionMessage('Class ' . $check . ' does not exist');
         $container = $this->container();
         $container->make($check);
@@ -221,9 +297,7 @@ class ContainerTest extends TestCase
     /**
      * Test get.
      *
-     * @throws ContainerException
      * @throws NotFoundException
-     * @throws ReflectionException
      */
     public function testGet(): void
     {
@@ -237,9 +311,7 @@ class ContainerTest extends TestCase
     /**
      * Test get not found.
      *
-     * @throws ContainerException
      * @throws NotFoundException
-     * @throws ReflectionException
      */
     public function testGetNotFound(): void
     {
@@ -253,9 +325,23 @@ class ContainerTest extends TestCase
     }
 
     /**
+     * Test get class not exist.
+     *
+     * @throws NotFoundException
+     */
+    public function testGetClassNotFound(): void
+    {
+        $container = $this->container();
+        $container->bind('bad.class', BadClass::class);
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('bad.class');
+        $container->get('bad.class');
+    }
+
+    /**
      * Test has.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testHas(): void
     {
@@ -268,8 +354,7 @@ class ContainerTest extends TestCase
     /**
      * Test call abstract.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testCallAbstract(): void
     {
@@ -292,8 +377,7 @@ class ContainerTest extends TestCase
     /**
      * Test call object.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testCallObject(): void
     {
@@ -313,10 +397,31 @@ class ContainerTest extends TestCase
     }
 
     /**
+     * Test call object not found.
+     *
+     * @throws NotFoundException
+     */
+    public function testCallObjectNotFound(): void
+    {
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('Method unknownMethod does not exist');
+
+        $check = md5((string)mt_rand(1, 100000));
+        $container = $this->container();
+
+        $container->call(
+            $this,
+            'unknownMethod',
+            [
+                'name' => $check
+            ]
+        );
+    }
+
+    /**
      * Test forget.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testForget(): void
     {
@@ -346,7 +451,7 @@ class ContainerTest extends TestCase
     /**
      * Test get definitions one.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testGetDefinitionsOne(): void
     {
@@ -359,7 +464,7 @@ class ContainerTest extends TestCase
     /**
      * Test get definition.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testGetDefinition(): void
     {
@@ -381,7 +486,7 @@ class ContainerTest extends TestCase
     /**
      * Test get abstracts.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testGetAbstracts(): void
     {
@@ -396,8 +501,7 @@ class ContainerTest extends TestCase
     /**
      * Test get instances.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testGetInstances(): void
     {
@@ -414,38 +518,38 @@ class ContainerTest extends TestCase
     }
 
     /**
-     * Test has instance.
+     * Test resolved.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
-    public function testHasInstance(): void
+    public function testResolved(): void
     {
         $container = $this->container();
-        $this->assertFalse($container->hasInstance(Test::class));
-        $container->setInstance(Test::class, new Test());
-        $this->assertTrue($container->hasInstance(Test::class));
+        $this->assertFalse($container->resolved(Test::class));
+        $container->set(Test::class, new Test());
+        $this->assertTrue($container->resolved(Test::class));
         $this->assertTrue($container->getDefinition(Test::class)->isShared());
     }
 
     /**
      * Test set instance.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testSetInstance(): void
     {
         $container = $this->container();
         $container->bind(Test::class);
-        $this->assertFalse($container->hasInstance(Test::class));
-        $container->setInstance(Test::class, new Test());
-        $this->assertTrue($container->hasInstance(Test::class));
+        $this->assertFalse($container->resolved(Test::class));
+        $container->set(Test::class, new Test());
+        $this->assertTrue($container->resolved(Test::class));
         $this->assertTrue($container->getDefinition(Test::class)->isShared());
     }
 
     /**
      * Test tag.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      */
     public function testTag(): void
     {
@@ -466,8 +570,6 @@ class ContainerTest extends TestCase
 
     /**
      * Test tag unknown.
-     *
-     * @throws ContainerException
      */
     public function testTagUnknown(): void
     {
@@ -480,7 +582,6 @@ class ContainerTest extends TestCase
     /**
      * Test run on extends.
      *
-     * @throws ContainerException
      * @throws NotFoundException
      * @throws ReflectionException
      */
@@ -519,7 +620,6 @@ class ContainerTest extends TestCase
     /**
      * Test run on interface.
      *
-     * @throws ContainerException
      * @throws NotFoundException
      * @throws ReflectionException
      */
@@ -558,7 +658,6 @@ class ContainerTest extends TestCase
     /**
      * Test run on tag.
      *
-     * @throws ContainerException
      * @throws NotFoundException
      * @throws ReflectionException
      */
@@ -597,7 +696,7 @@ class ContainerTest extends TestCase
     /**
      * Test get abstract instance make true/false.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      * @throws ReflectionException
      */
     public function testGetAbstractInstance(): void
@@ -631,7 +730,7 @@ class ContainerTest extends TestCase
     /**
      * Test get abstract instance has instance.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      * @throws ReflectionException
      */
     public function testGetAbstractInstanceHasInstance(): void
@@ -656,13 +755,12 @@ class ContainerTest extends TestCase
     /**
      * Test dependency injection not found.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testDependencyInjectionNotFound(): void
     {
-        $this->expectException(ContainerException::class);
-        $this->expectExceptionMessage('Class ' . TestInjectedInterface::class . ' does not exist.');
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage('Cannot instantiate interface ' . TestInjectedInterface::class);
         $container = $this->container();
         $container->bind(TestDependencyInjection::class);
         $container->make(TestDependencyInjection::class);
@@ -671,7 +769,7 @@ class ContainerTest extends TestCase
     /**
      * Test dependency injection injected.
      *
-     * @throws ContainerException
+     * @throws NotFoundException
      * @throws ReflectionException
      */
     public function testDependencyInjectionInjected(): void
@@ -686,8 +784,7 @@ class ContainerTest extends TestCase
     /**
      * Test dependency injection default value.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testDependencyInjectionDefaultValue(): void
     {
@@ -702,8 +799,7 @@ class ContainerTest extends TestCase
     /**
      * Test dependency injection specified value.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testDependencyInjectionSpecifiedValue(): void
     {
@@ -719,8 +815,7 @@ class ContainerTest extends TestCase
     /**
      * Test dependency injection forced value.
      *
-     * @throws ContainerException
-     * @throws ReflectionException
+     * @throws NotFoundException
      */
     public function testDependencyInjectionForcedValue(): void
     {
@@ -742,7 +837,7 @@ class ContainerTest extends TestCase
      */
     public function testNewInstanceClassNotFound(): void
     {
-        $this->expectException(ContainerException::class);
+        $this->expectException(NotFoundException::class);
         $this->expectExceptionMessage('Class unknown.class does not exist');
         $container = $this->container();
         Obj::callMethod(
@@ -762,7 +857,7 @@ class ContainerTest extends TestCase
      */
     public function testNewInstanceReflectionException(): void
     {
-        $this->expectException(ContainerException::class);
+        $this->expectException(NotFoundException::class);
         $this->expectExceptionMessage('fail.on.purpose');
         $container = $this->container();
         Obj::callMethod(
@@ -784,7 +879,7 @@ class ContainerTest extends TestCase
     {
         $message = 'Too few arguments to function ' . TestDependencyInjection::class . '::__construct(),' .
             ' 0 passed and exactly 2 expected';
-        $this->expectException(\ArgumentCountError::class);
+        $this->expectException(NotFoundException::class);
         $this->expectExceptionMessage($message);
         $container = $this->container();
         Obj::callMethod(

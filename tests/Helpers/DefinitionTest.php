@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\CoRex\Container\Helpers;
 
-use CoRex\Container\Exceptions\ContainerException;
 use CoRex\Container\Helpers\Definition;
 use CoRex\Helpers\Obj;
 use PHPUnit\Framework\TestCase;
@@ -21,7 +20,6 @@ class DefinitionTest extends TestCase
      * Test constructor class.
      *
      * @throws ReflectionException
-     * @throws ContainerException
      */
     public function testConstructorClass(): void
     {
@@ -39,7 +37,6 @@ class DefinitionTest extends TestCase
      * Test constructor interface.
      *
      * @throws ReflectionException
-     * @throws ContainerException
      */
     public function testConstructorInterface(): void
     {
@@ -57,7 +54,6 @@ class DefinitionTest extends TestCase
      * Test constructor not class.
      *
      * @throws ReflectionException
-     * @throws ContainerException
      */
     public function testConstructorNotClass(): void
     {
@@ -73,26 +69,7 @@ class DefinitionTest extends TestCase
     }
 
     /**
-     * Test constructor not concrete class.
-     *
-     * @throws ContainerException
-     */
-    public function testConstructorNotConcreteClass(): void
-    {
-        $abstract = BaseTest::class;
-        $concrete = md5((string)mt_rand(1, 100000));
-        $shared = mt_rand(0, 1) === 1;
-
-        $this->expectException(ContainerException::class);
-        $this->expectExceptionMessage('Class ' . $concrete . ' does not exist.');
-
-        new Definition($abstract, $concrete, $shared);
-    }
-
-    /**
      * Test is shared.
-     *
-     * @throws ContainerException
      */
     public function testIsShared(): void
     {
@@ -123,8 +100,6 @@ class DefinitionTest extends TestCase
 
     /**
      * Test get concrete class.
-     *
-     * @throws ContainerException
      */
     public function testGetConcreteClass(): void
     {
@@ -137,8 +112,6 @@ class DefinitionTest extends TestCase
 
     /**
      * Test extends class.
-     *
-     * @throws ContainerException
      */
     public function testExtendsClass(): void
     {
@@ -149,8 +122,6 @@ class DefinitionTest extends TestCase
 
     /**
      * Test implements intercace.
-     *
-     * @throws ContainerException
      */
     public function testImplementsInterface(): void
     {
@@ -161,8 +132,6 @@ class DefinitionTest extends TestCase
 
     /**
      * Test parameters.
-     *
-     * @throws ContainerException
      */
     public function testParameters(): void
     {
@@ -187,8 +156,6 @@ class DefinitionTest extends TestCase
 
     /**
      * Test set/get/has tag.
-     *
-     * @throws ContainerException
      */
     public function testSetGetHasTag(): void
     {

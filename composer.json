@@ -1,7 +1,7 @@
 {
     "name": "corex/container",
     "type": "library",
-    "description": "Container (Dependency Injection, PSR-11, tags)",
+    "description": "Container (Dependency Injection, PSR-11, tags, runOn....)",
     "license": "MIT",
     "authors": [
         {

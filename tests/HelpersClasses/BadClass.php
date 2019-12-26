@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\CoRex\Container\HelpersClasses;
 
-use CoRex\Container\Exceptions\ContainerException;
+use Exception;
 
 class BadClass
 {
     /**
      * BadClass.
      *
-     * @throws ContainerException
+     * @throws Exception
      */
     public function __construct()
     {
-        throw new ContainerException('fail.on.purpose');
+        throw new Exception('fail.on.purpose');
     }
 }
