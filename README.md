@@ -47,6 +47,20 @@ $myClass = $container->make('myClass', [
 ```
 
 
+#### Call a method on abstract with parameters
+```php
+$container = Container::getInstance();
+
+$container->bind('myClass', MyClass::class);
+
+$result = $container->call('myClass', 'myMethod', [
+    'firstname' => 'Roger',
+    'lastname' => 'Moore'
+]);
+```
+Note: it is possible to specify an object instead of binding/calling abstract.
+
+
 #### Parameters
 Parameters will be resolved in following order:
 1. ContainerInterface will be resolved to instance of container.
