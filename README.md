@@ -53,17 +53,17 @@ $container = Container::getInstance();
 
 $container->bind('myClass', MyClass::class);
 
+// No need to bind if object is specified instead of abstract.
 $result = $container->call('myClass', 'myMethod', [
     'firstname' => 'Roger',
     'lastname' => 'Moore'
 ]);
 ```
-Note: it is possible to specify an object instead of binding/calling abstract.
 
 
 #### Parameters
 Parameters will be resolved in following order:
-1. ContainerInterface will be resolved to instance of container.
+1. Type-hint ContainerInterface will be resolved to instance of container.
 2. Default parameters specified on definition.
 3. Default parameters in constructor/method.
 4. Specified parameters when calling make() and not already resolved.
