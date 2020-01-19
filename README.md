@@ -1,4 +1,4 @@
-# Dependency Injection Container
+# Simple Dependency Injection Container
 
 ![License](https://img.shields.io/packagist/l/corex/container.svg)
 ![Build Status](https://travis-ci.org/corex/container.svg?branch=master)
