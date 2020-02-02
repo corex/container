@@ -91,6 +91,33 @@ class ContainerTest extends TestCase
     }
 
     /**
+     * Test bind if.
+     *
+     * @throws NotFoundException
+     */
+    public function testBindIf(): void
+    {
+        $container = $this->container();
+
+        // Test not bound.
+        $this->assertFalse($container->has('test'));
+
+        // Bind if.
+        $definition = $container->bindIf('test', Test::class);
+        $this->assertEquals('test', $definition->getAbstract());
+
+        // Test bound.
+        $this->assertTrue($container->has('test'));
+
+        // Bind if.
+        $definition = $container->bindIf('test', Test::class);
+        $this->assertEquals('test', $definition->getAbstract());
+
+        // Test bound.
+        $this->assertTrue($container->has('test'));
+    }
+
+    /**
      * Test bind singleton.
      *
      * @throws NotFoundException
@@ -105,6 +132,33 @@ class ContainerTest extends TestCase
     }
 
     /**
+     * Test bind singleton if.
+     *
+     * @throws NotFoundException
+     */
+    public function testBindSingletonIf(): void
+    {
+        $container = $this->container();
+
+        // Test not bound.
+        $this->assertFalse($container->has('test'));
+
+        // Bind if.
+        $definition = $container->bindSingletonIf('test', Test::class);
+        $this->assertEquals('test', $definition->getAbstract());
+
+        // Test bound.
+        $this->assertTrue($container->has('test'));
+
+        // Bind if.
+        $definition = $container->bindSingletonIf('test', Test::class);
+        $this->assertEquals('test', $definition->getAbstract());
+
+        // Test bound.
+        $this->assertTrue($container->has('test'));
+    }
+
+    /**
      * Test bind shared.
      *
      * @throws NotFoundException
@@ -116,6 +170,33 @@ class ContainerTest extends TestCase
         $this->assertInstanceOf(Definition::class, $definition);
         $this->assertTrue($container->has(Test::class));
         $this->assertTrue($container->isShared(Test::class));
+    }
+
+    /**
+     * Test bind shared if.
+     *
+     * @throws NotFoundException
+     */
+    public function testBindSharedIf(): void
+    {
+        $container = $this->container();
+
+        // Test not bound.
+        $this->assertFalse($container->has('test'));
+
+        // Bind if.
+        $definition = $container->bindSharedIf('test', Test::class);
+        $this->assertEquals('test', $definition->getAbstract());
+
+        // Test bound.
+        $this->assertTrue($container->has('test'));
+
+        // Bind if.
+        $definition = $container->bindSharedIf('test', Test::class);
+        $this->assertEquals('test', $definition->getAbstract());
+
+        // Test bound.
+        $this->assertTrue($container->has('test'));
     }
 
     /**

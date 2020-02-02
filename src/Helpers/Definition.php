@@ -58,6 +58,16 @@ class Definition
     }
 
     /**
+     * Get abstract.
+     *
+     * @return string
+     */
+    public function getAbstract(): string
+    {
+        return $this->abstract;
+    }
+
+    /**
      * Get instance class.
      *
      * @return string|Closure

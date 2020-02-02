@@ -85,6 +85,24 @@ class Container implements ContainerInterface
     }
 
     /**
+     * Bind if not bound.
+     *
+     * @param string $abstract
+     * @param string|Closure|null $concrete
+     * @param bool $shared
+     * @return Definition
+     * @throws NotFoundException
+     */
+    public function bindIf(string $abstract, $concrete = null, bool $shared = false): Definition
+    {
+        if (!$this->has($abstract)) {
+            return $this->bind($abstract, $concrete, $shared);
+        }
+
+        return $this->getDefinition($abstract);
+    }
+
+    /**
      * Bind singleton.
      *
      * @param string $abstract
@@ -98,6 +116,23 @@ class Container implements ContainerInterface
     }
 
     /**
+     * Bind singleton if not bound.
+     *
+     * @param string $abstract
+     * @param string|Closure|null $concrete
+     * @return Definition
+     * @throws NotFoundException
+     */
+    public function bindSingletonIf(string $abstract, $concrete = null): Definition
+    {
+        if (!$this->has($abstract)) {
+            return $this->bindSingleton($abstract, $concrete);
+        }
+
+        return $this->getDefinition($abstract);
+    }
+
+    /**
      * Bind shared.
      *
      * @param string $abstract
@@ -108,6 +143,23 @@ class Container implements ContainerInterface
     public function bindShared(string $abstract, $concrete = null): Definition
     {
         return $this->bind($abstract, $concrete, true);
+    }
+
+    /**
+     * Bind shared.
+     *
+     * @param string $abstract
+     * @param string|Closure|null $concrete
+     * @return Definition
+     * @throws NotFoundException
+     */
+    public function bindSharedIf(string $abstract, $concrete = null): Definition
+    {
+        if (!$this->has($abstract)) {
+            return $this->bindShared($abstract, $concrete);
+        }
+
+        return $this->getDefinition($abstract);
     }
 
     /**

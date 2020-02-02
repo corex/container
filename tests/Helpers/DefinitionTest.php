@@ -99,6 +99,18 @@ class DefinitionTest extends TestCase
     }
 
     /**
+     * Test get abstract.
+     */
+    public function testGetAbstract(): void
+    {
+        $abstract = BaseTest::class;
+        $concrete = Test::class;
+        $shared = mt_rand(0, 1) === 1;
+        $definition = new Definition($abstract, $concrete, $shared);
+        $this->assertEquals($abstract, call_user_func([$definition, 'getAbstract']));
+    }
+
+    /**
      * Test get concrete class.
      */
     public function testGetConcreteClass(): void
