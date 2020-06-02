@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.1
+
+### Fixed
+- Throw correct exception message on get() when id not found.
+
 ## 1.1.0
 
 ### Added

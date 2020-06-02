@@ -400,7 +400,7 @@ class ContainerTest extends TestCase
         $container = $this->container();
 
         $this->expectException(NotFoundException::class);
-        $this->expectExceptionMessage($check);
+        $this->expectExceptionMessage('No entry was found for ' . $check . ' identifier.');
 
         $container->get($check);
     }
