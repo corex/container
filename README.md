@@ -2,8 +2,8 @@
 
 ![license](https://img.shields.io/github/license/corex/container?label=license)
 ![build](https://github.com/corex/container/workflows/build/badge.svg?branch=main)
-[![Code Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/corex/2a65b73db868d3be461dede9b1d5ceba/raw/test-coverage__main.json)](https://github.com/corex/container/actions)
-[![PHPStan Level](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/corex/2a65b73db868d3be461dede9b1d5ceba/raw/phpstan-level__main.json)](https://github.com/corex/container/actions)
+[![Code Coverage](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/corex/2a65b73db868d3be461dede9b1d5ceba/raw/test-coverage__master.json)](https://github.com/corex/container/actions)
+[![PHPStan Level](https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/corex/2a65b73db868d3be461dede9b1d5ceba/raw/phpstan-level__master.json)](https://github.com/corex/container/actions)
 
 
 > **Breaking changes** - this package has been rewritten from scratch to be more strict and simple to use.
