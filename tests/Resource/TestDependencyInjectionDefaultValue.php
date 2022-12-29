@@ -2,27 +2,28 @@
 
 declare(strict_types=1);
 
-namespace Tests\CoRex\Container\HelpersClasses;
+namespace Tests\CoRex\Container\Resource;
 
 class TestDependencyInjectionDefaultValue
 {
     public const DEFAULT_VALUE = 'default.value';
 
-    /** @var TestInjectedInterface */
-    private $testInjected;
+    private TestInjectedInterface $testInjected;
+    private string $test;
 
-    /** @var string */
-    private $test;
-
-    /**
-     * TestDependencyInjection.
-     *
-     * @param TestInjectedInterface $testInjected
-     * @param string $test
-     */
     public function __construct(TestInjectedInterface $testInjected, string $test = self::DEFAULT_VALUE)
     {
         $this->testInjected = $testInjected;
         $this->test = $test;
+    }
+
+    public function getTestInjected(): TestInjectedInterface
+    {
+        return $this->testInjected;
+    }
+
+    public function getTest(): string
+    {
+        return $this->test;
     }
 }

@@ -6,6 +6,6 @@ namespace CoRex\Container\Exceptions;
 
 use Psr\Container\NotFoundExceptionInterface;
 
-class NotFoundException extends \Exception implements NotFoundExceptionInterface
+final class NotFoundException extends \RuntimeException implements NotFoundExceptionInterface
 {
 }
