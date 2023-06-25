@@ -5,3 +5,5 @@
 /phpstan.neon export-ignore
 /phpunit.xml export-ignore
 /.phpunit.result.cache export-ignore
+/CHANGELOG.md export-ignore
+/.github export-ignore
