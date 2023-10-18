@@ -30,7 +30,7 @@ class Container implements ContainerInterface
         $isShared = $definition !== null && $definition->isShared();
 
         // If shared and instance resolved, return it.
-        if ($isShared && array_key_exists($idOrClass, $this->instances) && is_object($this->instances[$idOrClass])) {
+        if ($isShared && array_key_exists($idOrClass, $this->instances)) {
             return $this->instances[$idOrClass];
         }
 
@@ -74,10 +74,9 @@ class Container implements ContainerInterface
     }
 
     /**
-     * @param array<mixed> $params
+     * @param class-string $class
+     * @param array<int, mixed> $params
      * @return object
-     * @throws NotFoundException
-     * @throws ContainerException
      */
     private function newInstance(string $class, array $params): object
     {
