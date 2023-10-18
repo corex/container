@@ -1,5 +1,5 @@
 /vendor
 /composer.lock
-/log
+/var
 /.phpunit.result.cache
 /.idea
