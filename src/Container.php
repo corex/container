@@ -75,7 +75,7 @@ class Container implements ContainerInterface
 
     /**
      * @param class-string $class
-     * @param array<int, mixed> $params
+     * @param array<int|string, mixed> $params
      * @return object
      */
     private function newInstance(string $class, array $params): object
