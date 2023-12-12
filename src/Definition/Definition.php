@@ -11,6 +11,7 @@ final class Definition implements DefinitionInterface
     private string $id;
     private string $class;
     private bool $isShared = false;
+    private ?object $resolvedObject = null;
 
     /** @var array<string> */
     private array $tags = [];
@@ -141,5 +142,42 @@ final class Definition implements DefinitionInterface
     public function getArguments(): array
     {
         return $this->arguments;
+    }
+
+    /** @inheritDoc */
+    public function isResolved(): bool
+    {
+        return $this->resolvedObject !== null;
+    }
+
+    /** @inheritDoc */
+    public function setResolved(object $object): void
+    {
+        if ($this->isResolved()) {
+            throw new ContainerException(
+                sprintf(
+                    'Id %s is already resolved.',
+                    $this->getId()
+                )
+            );
+        }
+
+        $this->resolvedObject = $object;
+        $this->setShared(true);
+    }
+
+    /** @inheritDoc */
+    public function getResolved(): object
+    {
+        if ($this->resolvedObject === null) {
+            throw new ContainerException(
+                sprintf(
+                    'Id %s is not resolved.',
+                    $this->getId()
+                )
+            );
+        }
+
+        return $this->resolvedObject;
     }
 }

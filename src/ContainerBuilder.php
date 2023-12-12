@@ -14,6 +14,7 @@ final class ContainerBuilder implements ContainerBuilderInterface
     /** @var array<string, DefinitionInterface> */
     private array $definitions = [];
 
+    /** @inheritDoc */
     public function bind(string $id, string $class): DefinitionInterface
     {
         if ($this->has($id)) {
@@ -30,9 +31,34 @@ final class ContainerBuilder implements ContainerBuilderInterface
         return $definition;
     }
 
+    /** @inheritDoc */
     public function has(string $id): bool
     {
         return array_key_exists($id, $this->definitions);
+    }
+
+    /** @inheritDoc */
+    public function set(string $id, object $object): void
+    {
+        if (!$this->has($id)) {
+            throw new ContainerException(
+                sprintf('Id %s must be bound before setting object.', $id)
+            );
+        }
+
+        $definition = $this->getDefinition($id);
+        $boundClass = $definition->getClass();
+
+        if (!$object instanceof $boundClass) {
+            throw new ContainerException(
+                sprintf(
+                    'Object is not same as or extends "%s".',
+                    $boundClass
+                )
+            );
+        }
+
+        $definition->setResolved($object);
     }
 
     /** @inheritDoc */
@@ -55,6 +81,7 @@ final class ContainerBuilder implements ContainerBuilderInterface
         return $taggedIds;
     }
 
+    /** @inheritDoc */
     public function getDefinition(string $id): DefinitionInterface
     {
         if (!array_key_exists($id, $this->definitions)) {

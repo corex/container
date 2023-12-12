@@ -27,6 +27,10 @@ class Container implements ContainerInterface
     public function make(string $idOrClass, array $arguments = []): object
     {
         $definition = $this->has($idOrClass) ? $this->containerBuilder->getDefinition($idOrClass) : null;
+        if ($definition !== null && $definition->isResolved()) {
+            $this->instances[$idOrClass] = $definition->getResolved();
+        }
+
         $isShared = $definition !== null && $definition->isShared();
 
         // If shared and instance resolved, return it.

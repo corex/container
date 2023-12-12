@@ -104,4 +104,26 @@ interface DefinitionInterface
      * @return array<string, mixed>
      */
     public function getArguments(): array;
+
+    /**
+     * Is resolved.
+     *
+     * @return bool
+     */
+    public function isResolved(): bool;
+
+    /**
+     * Set resolved and set as shared.
+     *
+     * @param object $object
+     * @return void
+     */
+    public function setResolved(object $object): void;
+
+    /**
+     * Get resolved.
+     *
+     * @return object
+     */
+    public function getResolved(): object;
 }

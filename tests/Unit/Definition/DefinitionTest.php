@@ -8,8 +8,12 @@ use CoRex\Container\Definition\Definition;
 use CoRex\Container\Exceptions\ContainerException;
 use PHPUnit\Framework\TestCase;
 use Tests\CoRex\Container\Resource\Test;
+use Tests\CoRex\Container\Resource\TestExtended;
 use Tests\CoRex\Container\Resource\TestInterface;
 
+/**
+ * @covers \CoRex\Container\Definition\Definition
+ */
 class DefinitionTest extends TestCase
 {
     public function testConstructorWhenClass(): void
@@ -158,5 +162,63 @@ class DefinitionTest extends TestCase
         $this->expectExceptionMessage('Argument test not set.');
 
         $definitionBuilder->getArgument('test');
+    }
+
+    public function testIsResolvedAndSetResolved(): void
+    {
+        $definition = new Definition('test', Test::class);
+
+        $this->assertFalse($definition->isResolved());
+
+        $definition->setResolved(new TestExtended());
+
+        $this->assertTrue($definition->isResolved());
+    }
+
+    public function testSetResolvedWhenAlreadySet(): void
+    {
+        $definition = new Definition('test', Test::class);
+
+        $definition->setResolved(new TestExtended());
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Id %s is already resolved.',
+                'test'
+            )
+        );
+
+        // Set twice to provoke exception.
+        $definition->setResolved(new TestExtended());
+    }
+
+    public function testGetResolvedWorks(): void
+    {
+        $definition = new Definition('test', Test::class);
+
+        $testExtended = new TestExtended();
+
+        $definition->setResolved($testExtended);
+
+        $this->assertSame(
+            $testExtended,
+            $definition->getResolved()
+        );
+    }
+
+    public function testGetResolvedWhenNotSet(): void
+    {
+        $definition = new Definition('test', Test::class);
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Id %s is not resolved.',
+                'test'
+            )
+        );
+
+        $definition->getResolved();
     }
 }

@@ -22,11 +22,15 @@ use Tests\CoRex\Container\Resource\Test;
 use Tests\CoRex\Container\Resource\TestContainerInjected;
 use Tests\CoRex\Container\Resource\TestDependencyInjection;
 use Tests\CoRex\Container\Resource\TestDependencyInjectionDefaultValue;
+use Tests\CoRex\Container\Resource\TestExtended;
 use Tests\CoRex\Container\Resource\TestInjected;
 use Tests\CoRex\Container\Resource\TestInjectedInterface;
 use Tests\CoRex\Container\Resource\TestParameter;
 use Tests\CoRex\Container\Resource\TestParameterDefault;
 
+/**
+ * @covers \CoRex\Container\Container
+ */
 class ContainerTest extends TestCase
 {
     public function testMakeWhenBound(): void
@@ -142,6 +146,26 @@ class ContainerTest extends TestCase
         );
 
         $container->make(TestParameter::class);
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function testMakeWhenResolved(): void
+    {
+        $testExtended = new TestExtended();
+
+        $containerBuilder = new ContainerBuilder();
+        $containerBuilder->bind('test', Test::class);
+
+        $containerBuilder->set('test', $testExtended);
+
+        $container = new Container($containerBuilder);
+
+        $testExtendedResolved = $container->get('test');
+
+        $this->assertSame($testExtended, $testExtendedResolved);
     }
 
     /**

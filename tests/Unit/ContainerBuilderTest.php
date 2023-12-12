@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\CoRex\Container\Unit;
 
+use CoRex\Container\Container;
 use CoRex\Container\ContainerBuilder;
 use CoRex\Container\Exceptions\ContainerException;
 use CoRex\Container\Exceptions\NotFoundException;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use Tests\CoRex\Container\Resource\Test;
+use Tests\CoRex\Container\Resource\TestExtended;
+use Tests\CoRex\Container\Resource\TestInjected;
 
+/**
+ * @covers \CoRex\Container\ContainerBuilder
+ */
 class ContainerBuilderTest extends TestCase
 {
     public function testBindWorks(): void
@@ -43,6 +51,61 @@ class ContainerBuilderTest extends TestCase
         $this->assertFalse($containerBuilder->has(Test::class));
         $containerBuilder->bind(Test::class, Test::class);
         $this->assertTrue($containerBuilder->has(Test::class));
+    }
+
+    /**
+     * @throws ContainerExceptionInterface
+     * @throws NotFoundExceptionInterface
+     */
+    public function testSetWorks(): void
+    {
+        $testExtended = new TestExtended();
+
+        $containerBuilder = new ContainerBuilder();
+        $containerBuilder->bind('test', Test::class);
+
+        $containerBuilder->set('test', $testExtended);
+
+        $container = new Container($containerBuilder);
+
+        $testExtendedResolved = $container->get('test');
+
+        $this->assertSame($testExtended, $testExtendedResolved);
+    }
+
+    public function testSetSameOrExtendsClass(): void
+    {
+        $classNotExtendingCorrectClass = new TestInjected();
+
+        $containerBuilder = new ContainerBuilder();
+        $containerBuilder->bind('test', Test::class);
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Object is not same as or extends "%s".',
+                Test::class
+            )
+        );
+
+        $containerBuilder->set('test', $classNotExtendingCorrectClass);
+    }
+
+    public function testSetNotBound(): void
+    {
+        $testExtended = new TestExtended();
+
+        $containerBuilder = new ContainerBuilder();
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Id %s must be bound before setting object.',
+                'test'
+            )
+        );
+
+        $containerBuilder->set('test', $testExtended);
     }
 
     public function testGetIds(): void

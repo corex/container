@@ -28,6 +28,15 @@ interface ContainerBuilderInterface
     public function has(string $id): bool;
 
     /**
+     * Set object for bound id.
+     *
+     * @param string $id
+     * @param object $object
+     * @return void
+     */
+    public function set(string $id, object $object): void;
+
+    /**
      * Get ids.
      *
      * @return array<string>
