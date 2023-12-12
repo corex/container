@@ -8,6 +8,7 @@
 
 > **Breaking changes** - this package has been rewritten from scratch to be more strict and simple to use.
 
+- Container is immutable.
 - Support for PSR-11 Container Interface.
 - Support for setting default parameters on definitions.
 
@@ -23,10 +24,12 @@ Type-hints will be resolved if they are bound in advance.
 
 ### Make a class with binding and parameters.
 ```php
-$container = new Container();
+$containerBuilder = new ContainerBuilder();
 
-$container->bind('myClass', MyClass::class)
+$containerBuilder->bind('myClass', MyClass::class)
     ->setArgument('firstname', 'Roger');
+
+$container = new Container($containerBuilder);
 
 $myClass = $container->make('myClass', [
     'lastname' => 'Moore'
