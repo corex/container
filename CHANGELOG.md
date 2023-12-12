@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.1.0
+
+### Added
+- Added option to set resolved object on container builder.
+
 ## 2.0.0
 
 ### Changes
