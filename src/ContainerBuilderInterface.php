@@ -19,6 +19,22 @@ interface ContainerBuilderInterface
     public function bind(string $id, string $class): DefinitionInterface;
 
     /**
+     * Bind class with class name as id.
+     *
+     * @param string $class
+     * @return DefinitionInterface
+     */
+    public function bindClass(string $class): DefinitionInterface;
+
+    /**
+     * Bind by interface on class (Must have only 1 interface).
+     *
+     * @param string $class
+     * @return DefinitionInterface
+     */
+    public function bindClassByInterface(string $class): DefinitionInterface;
+
+    /**
      * Has definition.
      *
      * @param string $id Identifier of the definition to look for.

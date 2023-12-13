@@ -14,6 +14,9 @@ use Psr\Container\NotFoundExceptionInterface;
 use Tests\CoRex\Container\Resource\Test;
 use Tests\CoRex\Container\Resource\TestExtended;
 use Tests\CoRex\Container\Resource\TestInjected;
+use Tests\CoRex\Container\Resource\TestInterface;
+use Tests\CoRex\Container\Resource\TestNoImplements;
+use Tests\CoRex\Container\Resource\TestWithMultipleInterfaces;
 
 /**
  * @covers \CoRex\Container\ContainerBuilder
@@ -43,6 +46,85 @@ class ContainerBuilderTest extends TestCase
         $this->expectException(ContainerException::class);
         $this->expectExceptionMessage(sprintf('Id %s already bound', Test::class));
         $containerBuilder->bind(Test::class, Test::class);
+    }
+
+    public function testBindClassWorks(): void
+    {
+        $containerBuilder = new ContainerBuilder();
+
+        $this->assertFalse($containerBuilder->has(Test::class));
+        $this->assertFalse($containerBuilder->has(TestInterface::class));
+
+        $containerBuilder->bindClass(Test::class);
+
+        $this->assertTrue($containerBuilder->has(Test::class));
+        $this->assertFalse($containerBuilder->has(TestInterface::class));
+    }
+
+    public function testBindClassByInterfaceWorks(): void
+    {
+        $containerBuilder = new ContainerBuilder();
+        $this->assertFalse($containerBuilder->has(TestInterface::class));
+        $containerBuilder->bindClassByInterface(Test::class);
+        $this->assertTrue($containerBuilder->has(TestInterface::class));
+    }
+
+    public function testBindClassByInterfaceWithUnknownClass(): void
+    {
+        $containerBuilder = new ContainerBuilder();
+
+        $this->expectException(NotFoundException::class);
+        $this->expectExceptionMessage(
+            sprintf('Class %s not found.', 'unknown')
+        );
+
+        $containerBuilder->bindClassByInterface('unknown');
+    }
+
+    public function testBindClassByInterfaceWhenNoInterface(): void
+    {
+        $containerBuilder = new ContainerBuilder();
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Class %s does not implement an interface.',
+                TestNoImplements::class
+            )
+        );
+
+        $containerBuilder->bindClassByInterface(TestNoImplements::class);
+    }
+
+    public function testBindClassByInterfaceWhenMoreThanOneInterface(): void
+    {
+        $containerBuilder = new ContainerBuilder();
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Class %s must only implement 1 interface to use %s().',
+                TestWithMultipleInterfaces::class,
+                'bindClassByInterface'
+            )
+        );
+
+        $containerBuilder->bindClassByInterface(TestWithMultipleInterfaces::class);
+    }
+
+    public function testBindClassByInterfaceWhenInterfaceIsSpecified(): void
+    {
+        $containerBuilder = new ContainerBuilder();
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Must specify a class when using %s().',
+                'bindClassByInterface'
+            )
+        );
+
+        $containerBuilder->bindClassByInterface(TestInterface::class);
     }
 
     public function testHas(): void

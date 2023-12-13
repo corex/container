@@ -31,6 +31,58 @@ final class ContainerBuilder implements ContainerBuilderInterface
         return $definition;
     }
 
+    /**
+     * @inheritDoc
+     */
+    public function bindClass(string $class): DefinitionInterface
+    {
+        return $this->bind($class, $class);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function bindClassByInterface(string $class): DefinitionInterface
+    {
+        if (interface_exists($class)) {
+            throw new ContainerException(
+                sprintf(
+                    'Must specify a class when using %s().',
+                    __FUNCTION__
+                )
+            );
+        }
+
+        if (!class_exists($class)) {
+            throw new NotFoundException(sprintf('Class %s not found.', $class));
+        }
+
+        $classImplements = class_implements($class);
+
+        if (count($classImplements) === 0) {
+            throw new ContainerException(
+                sprintf(
+                    'Class %s does not implement an interface.',
+                    $class
+                )
+            );
+        }
+
+        if (count($classImplements) > 1) {
+            throw new ContainerException(
+                sprintf(
+                    'Class %s must only implement 1 interface to use %s().',
+                    $class,
+                    __FUNCTION__
+                )
+            );
+        }
+
+        $interface = array_values($classImplements)[0];
+
+        return $this->bind($interface, $class);
+    }
+
     /** @inheritDoc */
     public function has(string $id): bool
     {

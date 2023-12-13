@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.0
+
+### Added
+- Option to bind class by name of class.
+- Option to bind class by implemented interface.
+
 ## 2.1.0
 
 ### Added

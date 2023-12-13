@@ -37,6 +37,36 @@ $myClass = $container->make('myClass', [
 ```
 
 
+### Make a class binding by class.
+```php
+$containerBuilder = new ContainerBuilder();
+
+$containerBuilder->bindClass(MyClass::class);
+
+$container = new Container($containerBuilder);
+$myClass = $container->get(MyClass::class);
+```
+
+
+### Make a class binding by implemented interface.
+```php
+interface MyClassInterface
+{
+}
+
+class MyClass implements MyClassInterface
+{
+}
+
+$containerBuilder = new ContainerBuilder();
+
+$containerBuilder->bindClassOnInterface(MyClass::class);
+
+$container = new Container($containerBuilder);
+$myClass = $container->get(MyClassInterface::class);
+```
+
+
 ## Parameters
 Parameters will be resolved in following order:
 1. Type-hint ContainerInterface will be resolved to instance of container.
