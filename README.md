@@ -1,4 +1,4 @@
-# Simple Dependency Injection Container
+# Simple and Immutable Dependency Injection Container
 
 ![license](https://img.shields.io/github/license/corex/container?label=license)
 ![build](https://github.com/corex/container/workflows/build/badge.svg?branch=master)
