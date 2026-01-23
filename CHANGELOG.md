@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.3.0
+
+### Added
+- Class name type resolution.
+
 ## 2.2.0
 
 ### Added

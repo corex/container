@@ -27,6 +27,7 @@ use Tests\CoRex\Container\Resource\TestInjected;
 use Tests\CoRex\Container\Resource\TestInjectedInterface;
 use Tests\CoRex\Container\Resource\TestParameter;
 use Tests\CoRex\Container\Resource\TestParameterDefault;
+use Tests\CoRex\Container\Resource\TestParameterWithTypeHint;
 
 /**
  * @covers \CoRex\Container\Container
@@ -146,6 +147,21 @@ class ContainerTest extends TestCase
         );
 
         $container->make(TestParameter::class);
+    }
+
+    public function testMakeWhenResolvingParameterWithTypehintAndNoDefaultValue(): void
+    {
+        $container = new Container();
+
+        $this->expectException(ContainerException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                '"string firstname" could not be resolved for id/class "%s".',
+                TestParameterWithTypeHint::class
+            )
+        );
+
+        $container->make(TestParameterWithTypeHint::class);
     }
 
     /**

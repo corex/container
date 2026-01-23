@@ -13,9 +13,10 @@ interface ContainerInterface extends PsrContainerInterface
     /**
      * Make.
      *
-     * @param string $idOrClass
+     * @template T of object
+     * @param class-string<T>|string $idOrClass
      * @param array<int|string, mixed> $arguments
-     * @return object
+     * @return ($idOrClass is class-string<T> ? T : object)
      * @throws NotFoundException
      * @throws ContainerException
      */

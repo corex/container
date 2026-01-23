@@ -6,6 +6,8 @@ namespace CoRex\Container;
 
 use CoRex\Container\Exceptions\ContainerException;
 use CoRex\Container\Exceptions\NotFoundException;
+use Psr\Container\ContainerExceptionInterface;
+use Psr\Container\NotFoundExceptionInterface;
 use ReflectionClass;
 use ReflectionNamedType;
 use ReflectionParameter;
@@ -62,8 +64,18 @@ class Container implements ContainerInterface
         return $instance;
     }
 
-    /** @inheritDoc */
-    public function get(string $id)
+    /**
+     * Finds an entry of the container by its identifier and returns it.
+     *
+     * @template T of object
+     * @param class-string<T>|string $id Identifier of the entry to look for.
+     *
+     * @throws NotFoundExceptionInterface No entry was found for **this** identifier.
+     * @throws ContainerExceptionInterface Error while retrieving the entry.
+     *
+     * @return ($id is class-string<T> ? T : object)
+     */
+    public function get(string $id): object
     {
         if (!$this->has($id)) {
             throw new NotFoundException('No entry was found for ' . $id . ' identifier.');
@@ -72,6 +84,17 @@ class Container implements ContainerInterface
         return $this->make($id);
     }
 
+    /**
+     * Returns true if the container can return an entry for the given identifier.
+     * Returns false otherwise.
+     *
+     * `has($id)` returning true does not mean that `get($id)` will not throw an exception.
+     * It does however mean that `get($id)` will not throw a `NotFoundExceptionInterface`.
+     *
+     * @param class-string|string $id Identifier of the entry to look for.
+     *
+     * @return bool
+     */
     public function has(string $id): bool
     {
         return $this->containerBuilder->has($id);
