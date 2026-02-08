@@ -1,4 +1,4 @@
-# Simple and Immutable Dependency Injection Container
+# Simple Dependency Injection Container
 
 ![license](https://img.shields.io/github/license/corex/container?label=license)
 ![build](https://github.com/corex/container/workflows/build/badge.svg?branch=master)
@@ -8,11 +8,10 @@
 
 > **Breaking changes** - this package has been rewritten from scratch to be more strict and simple to use.
 
-- Container is immutable.
 - Support for PSR-11 Container Interface.
 - Support for setting default parameters on definitions.
 
-## A few examples
+## Examples
 
 
 ### Make a class without binding.
@@ -60,11 +59,123 @@ class MyClass implements MyClassInterface
 
 $containerBuilder = new ContainerBuilder();
 
-$containerBuilder->bindClassOnInterface(MyClass::class);
+$containerBuilder->bindClassByInterface(MyClass::class);
 
 $container = new Container($containerBuilder);
 $myClass = $container->get(MyClassInterface::class);
 ```
+
+
+### Factory - closure
+```php
+interface MyClassInterface
+{
+}
+
+class MyClass implements MyClassInterface
+{
+}
+
+$containerBuilder = new ContainerBuilder();
+
+$containerBuilder->bindClassByInterface(MyClass::class)
+    ->setFactory(function (ContainerInterface $container) {
+        return $container->make(MyClass::class);
+    });
+
+$container = new Container($containerBuilder);
+$myClass = $container->get(MyClassInterface::class);
+```
+> Container will be parsed as first and only argument on Closure and can be used to instantiate and resolve dependencies.
+
+
+### Factory - invokable
+```php
+interface MyClassInterface
+{
+}
+
+class MyClass implements MyClassInterface
+{
+}
+
+class MyFactory
+{
+    public function __invoke(ContainerInterface $container): MyClassInterface
+    {
+        return $container->make(MyClass::class);
+    }
+}
+
+$containerBuilder = new ContainerBuilder();
+
+$containerBuilder->bindClassByInterface(MyClass::class)
+    ->setFactory(MyFactory::class);
+
+$container = new Container($containerBuilder);
+$myClass = $container->get(MyClassInterface::class);
+```
+> Container will be parsed as first and only argument on __invoke() and can be used to instantiate and resolve dependencies.
+
+
+### Factory - dynamic method
+```php
+interface MyClassInterface
+{
+}
+
+class MyClass implements MyClassInterface
+{
+}
+
+class MyFactory
+{
+    public function createMyClass(ContainerInterface $container): MyClassInterface
+    {
+        return $container->make(MyClass::class);
+    }
+}
+
+$containerBuilder = new ContainerBuilder();
+
+$containerBuilder->bindClassByInterface(MyClass::class)
+    ->setFactory(MyFactory::class, 'createMyClass');
+
+$container = new Container($containerBuilder);
+$myClass = $container->get(MyClassInterface::class);
+```
+> Container will be parsed as first and only argument on createMyClass() and can be used to instantiate and resolve dependencies.
+
+
+### Factory - static method
+```php
+interface MyClassInterface
+{
+}
+
+class MyClass implements MyClassInterface
+{
+}
+
+class MyFactory
+{
+    public static function createMyClass(ContainerInterface $container): MyClassInterface
+    {
+        return $container->make(MyClass::class);
+    }
+}
+
+$containerBuilder = new ContainerBuilder();
+
+$containerBuilder->bindClassByInterface(MyClass::class)
+    ->setFactory(MyFactory::class, '::createMyClass');
+
+$container = new Container($containerBuilder);
+$myClass = $container->get(MyClassInterface::class);
+```
+> Container will be parsed as first and only argument on createMyClass() and can be used to instantiate and resolve dependencies.
+>
+> Notice the "::" on `$factoryMethod` which indicate a static method.
 
 
 ## Parameters

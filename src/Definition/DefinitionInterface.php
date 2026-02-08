@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace CoRex\Container\Definition;
 
+use Closure;
+use CoRex\Container\Exceptions\FactoryException;
+
 interface DefinitionInterface
 {
+    public const METHOD_INVOKE = '__invoke';
+
     /**
      * Set shared.
      *
@@ -126,4 +131,31 @@ interface DefinitionInterface
      * @return object
      */
     public function getResolved(): object;
+
+    /**
+     * Set factory.
+     *
+     * @param Closure|string $factoryClassOrClosure
+     * @param string $factoryMethod Default "__invoke" for invokable factory.
+     * @return self
+     */
+    public function setFactory(
+        Closure|string $factoryClassOrClosure,
+        string $factoryMethod = self::METHOD_INVOKE
+    ): self;
+
+    /**
+     * Check if factory is specified.
+     *
+     * @return bool
+     */
+    public function hasFactory(): bool;
+
+    /**
+     * Get factory.
+     *
+     * @return Factory
+     * @throws FactoryException
+     */
+    public function getFactory(): Factory;
 }

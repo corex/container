@@ -8,6 +8,7 @@ use CoRex\Container\Container;
 use CoRex\Container\ContainerBuilder;
 use CoRex\Container\ContainerBuilderInterface;
 use CoRex\Container\Definition\DefinitionInterface;
+use CoRex\Container\Definition\Factory;
 use CoRex\Container\Exceptions\ContainerException;
 use CoRex\Container\Exceptions\NotFoundException;
 use PHPUnit\Framework\TestCase;
@@ -25,6 +26,7 @@ use Tests\CoRex\Container\Resource\TestDependencyInjectionDefaultValue;
 use Tests\CoRex\Container\Resource\TestExtended;
 use Tests\CoRex\Container\Resource\TestInjected;
 use Tests\CoRex\Container\Resource\TestInjectedInterface;
+use Tests\CoRex\Container\Resource\TestInterface;
 use Tests\CoRex\Container\Resource\TestParameter;
 use Tests\CoRex\Container\Resource\TestParameterDefault;
 use Tests\CoRex\Container\Resource\TestParameterWithTypeHint;
@@ -182,6 +184,47 @@ class ContainerTest extends TestCase
         $testExtendedResolved = $container->get('test');
 
         $this->assertSame($testExtended, $testExtendedResolved);
+    }
+
+    public function testMakeWithFactory(): void
+    {
+        $id = 'test';
+
+        $test = $this->createMock(TestInterface::class);
+
+        $factory = $this->createMock(Factory::class);
+        $factory->expects($this->once())
+            ->method('invoke')
+            ->willReturn($test);
+
+        $definition = $this->getMockBuilder(DefinitionInterface::class)->getMock();
+        $definition->expects($this->once())
+            ->method('isShared')
+            ->willReturnOnConsecutiveCalls(true, true);
+        $definition->expects($this->once())
+            ->method('getClass')
+            ->willReturn(Test::class);
+        $definition->expects($this->once())
+            ->method('getArguments')
+            ->willReturn([]);
+
+        $definition->expects($this->once())->method('hasFactory')->willReturn(true);
+        $definition->expects($this->once())->method('getFactory')->willReturn($factory);
+
+        $containerBuilder = $this->getMockBuilder(ContainerBuilderInterface::class)->getMock();
+        $containerBuilder->expects($this->once())
+            ->method('has')
+            ->withConsecutive([$id])
+            ->willReturnOnConsecutiveCalls(true, true);
+        $containerBuilder->expects($this->once())
+            ->method('getDefinition')
+            ->withConsecutive([$id])
+            ->willReturnOnConsecutiveCalls($definition, $definition);
+
+        $container = new Container($containerBuilder);
+
+        $instance = $container->make($id);
+        $this->assertSame($test, $instance);
     }
 
     /**

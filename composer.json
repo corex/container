@@ -1,7 +1,7 @@
 {
     "name": "corex/container",
     "type": "library",
-    "description": "Simple and Immutable Dependency Injection Container",
+    "description": "Simple Dependency Injection Container",
     "license": "MIT",
     "authors": [
         {

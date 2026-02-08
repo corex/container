@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace CoRex\Container\Definition;
 
+use Closure;
 use CoRex\Container\Exceptions\ContainerException;
+use CoRex\Container\Exceptions\FactoryException;
+use ReflectionMethod;
 
 final class Definition implements DefinitionInterface
 {
@@ -12,6 +15,7 @@ final class Definition implements DefinitionInterface
     private string $class;
     private bool $isShared = false;
     private ?object $resolvedObject = null;
+    private ?Factory $factory = null;
 
     /** @var array<string> */
     private array $tags = [];
@@ -179,5 +183,153 @@ final class Definition implements DefinitionInterface
         }
 
         return $this->resolvedObject;
+    }
+
+    /** @inheritDoc
+     */
+    public function setFactory(Closure|string $factoryClassOrClosure, string $factoryMethod = self::METHOD_INVOKE): self
+    {
+        if ($this->factory !== null) {
+            throw new FactoryException(
+                sprintf(
+                    'Factory is already set for id "%s".',
+                    $this->id
+                )
+            );
+        }
+
+        if ($factoryClassOrClosure instanceof Closure) {
+            if ($factoryMethod !== self::METHOD_INVOKE) {
+                throw new FactoryException(
+                    sprintf(
+                        'It is not allowed to set method name "%s()" for a closure. Id: "%s".',
+                        $factoryMethod,
+                        $this->id
+                    )
+                );
+            }
+
+            $this->factory = new Factory($factoryClassOrClosure, null, false);
+
+            return $this;
+        }
+
+        $isFactoryMethodStatic = false;
+
+        if (str_contains($factoryClassOrClosure, '::')) {
+            [$factoryClassOrClosure, $factoryMethod] = explode('::', $factoryClassOrClosure);
+            if ((string)trim($factoryMethod) === '') {
+                throw new FactoryException(
+                    sprintf(
+                        'Factory method not specified for factory class "%s". Id: "%s".',
+                        $factoryClassOrClosure,
+                        $this->id
+                    )
+                );
+            }
+
+            $isFactoryMethodStatic = true;
+        }
+
+        if (!class_exists($factoryClassOrClosure)) {
+            throw new FactoryException(
+                sprintf(
+                    'Factory class "%s" does not exist. Id: "%s".',
+                    $factoryClassOrClosure,
+                    $this->id
+                )
+            );
+        }
+
+        if (str_starts_with($factoryMethod, '::')) {
+            $factoryMethod = substr($factoryMethod, 2);
+            if ((string)trim($factoryMethod) === '') {
+                throw new FactoryException(
+                    sprintf(
+                        'Factory method not specified for factory class "%s". Id: "%s".',
+                        $factoryClassOrClosure,
+                        $this->id
+                    )
+                );
+            }
+
+            $isFactoryMethodStatic = true;
+        }
+
+        // Validate factory method existence.
+        if (!method_exists($factoryClassOrClosure, $factoryMethod)) {
+            throw new FactoryException(
+                sprintf(
+                    'Factory class "%s" does not have method "%s". Id: "%s".',
+                    $factoryClassOrClosure,
+                    $factoryMethod,
+                    $this->id
+                )
+            );
+        }
+
+        // Validate factory method.
+        $reflectionMethod = new ReflectionMethod($factoryClassOrClosure, $factoryMethod);
+        $methodExceptionMessage = $this->validateFactoryMethod(
+            $factoryClassOrClosure,
+            $factoryMethod,
+            $reflectionMethod->isStatic(),
+            $isFactoryMethodStatic
+        );
+        if ($methodExceptionMessage !== null) {
+            throw new FactoryException($methodExceptionMessage);
+        }
+
+        $this->factory = new Factory($factoryClassOrClosure, $factoryMethod, $isFactoryMethodStatic);
+
+        return $this;
+    }
+
+    /** @inheritDoc */
+    public function hasFactory(): bool
+    {
+        return $this->factory !== null;
+    }
+
+    /** @inheritDoc */
+    public function getFactory(): Factory
+    {
+        if ($this->factory === null) {
+            throw new FactoryException(
+                sprintf(
+                    'No factory is set for %s',
+                    $this->id
+                )
+            );
+        }
+
+        return $this->factory;
+    }
+
+    private function validateFactoryMethod(
+        string $factoryClass,
+        string $factoryMethod,
+        bool $isMethodStatic,
+        bool $isMethodSpecifiedStatic
+    ): ?string {
+        if ($isMethodStatic && !$isMethodSpecifiedStatic) {
+            return sprintf(
+                'Factory method "%s::%s" is static but definition specify not static. Id: "%s".',
+                $factoryClass,
+                $factoryMethod,
+                $this->id
+            );
+        }
+
+        if (!$isMethodStatic && $isMethodSpecifiedStatic) {
+            return sprintf(
+                'Factory method "%s::%s" is dynamic but definition specify static. Id: "%s".',
+                $factoryClass,
+                $factoryMethod,
+                $this->id
+            );
+        }
+
+        return null;
     }
 }

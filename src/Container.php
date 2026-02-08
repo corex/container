@@ -47,14 +47,22 @@ class Container implements ContainerInterface
             $class = $idOrClass;
         }
 
-        if (!class_exists($class)) {
-            throw new NotFoundException(sprintf('%s not found.', $class));
+        $factory = $definition !== null && $definition->hasFactory()
+            ? $definition->getFactory()
+            : null;
+
+        if ($factory !== null) {
+            $instance = $factory->invoke($this);
+        } else {
+            if (!class_exists($class)) {
+                throw new NotFoundException(sprintf('%s not found.', $class));
+            }
+
+            $reflectionParameters = $this->getReflectionParametersFromClass($class);
+            $resolvedParameters = $this->resolveReflectionParameters($idOrClass, $reflectionParameters, $arguments);
+
+            $instance = $this->newInstance($class, $resolvedParameters);
         }
-
-        $reflectionParameters = $this->getReflectionParametersFromClass($class);
-        $resolvedParameters = $this->resolveReflectionParameters($idOrClass, $reflectionParameters, $arguments);
-
-        $instance = $this->newInstance($class, $resolvedParameters);
 
         // If shared, store resolved instance.
         if ($isShared) {
@@ -70,10 +78,10 @@ class Container implements ContainerInterface
      * @template T of object
      * @param class-string<T>|string $id Identifier of the entry to look for.
      *
-     * @throws NotFoundExceptionInterface No entry was found for **this** identifier.
+     * @return ($id is class-string<T> ? T : object)
      * @throws ContainerExceptionInterface Error while retrieving the entry.
      *
-     * @return ($id is class-string<T> ? T : object)
+     * @throws NotFoundExceptionInterface No entry was found for **this** identifier.
      */
     public function get(string $id): object
     {

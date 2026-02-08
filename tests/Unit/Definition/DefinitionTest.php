@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\CoRex\Container\Definition;
 
+use CoRex\Container\ContainerInterface;
 use CoRex\Container\Definition\Definition;
+use CoRex\Container\Definition\Factory;
 use CoRex\Container\Exceptions\ContainerException;
+use CoRex\Container\Exceptions\FactoryException;
 use PHPUnit\Framework\TestCase;
+use ReflectionException;
+use stdClass;
 use Tests\CoRex\Container\Resource\Test;
 use Tests\CoRex\Container\Resource\TestExtended;
+use Tests\CoRex\Container\Resource\TestFactory;
+use Tests\CoRex\Container\Resource\TestFactoryObject;
 use Tests\CoRex\Container\Resource\TestInterface;
 
 /**
@@ -220,5 +227,297 @@ class DefinitionTest extends TestCase
         );
 
         $definition->getResolved();
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testHasFactory(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->assertFalse($definition->hasFactory());
+
+        $definition->setFactory(TestFactory::class);
+
+        $this->assertTrue($definition->hasFactory());
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testGetFactory(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $definition->setFactory(TestFactory::class);
+
+        $this->assertInstanceOf(
+            Factory::class,
+            $definition->getFactory()
+        );
+    }
+
+    public function testGetFactoryWhenNoFactoryHasBeenSpecified(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'No factory is set for %s',
+                TestInterface::class
+            )
+        );
+
+        $definition->getFactory();
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryClosure(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->assertFalse($definition->hasFactory());
+
+        $definition->setFactory(function (ContainerInterface $container) {
+            return new TestFactoryObject(
+                $container->make(Test::class)
+            );
+        });
+
+        $this->assertTrue($definition->hasFactory());
+
+        $factory = $definition->getFactory();
+
+        $this->assertTrue($factory->isClosureFactory());
+        $this->assertFalse($factory->isInvokableFactory());
+        $this->assertFalse($factory->isDynamicFactory());
+        $this->assertFalse($factory->isStaticFactory());
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryInvokable(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $definition->setFactory(TestFactory::class);
+
+        $factory = $definition->getFactory();
+
+        $this->assertFalse($factory->isClosureFactory());
+        $this->assertTrue($factory->isInvokableFactory());
+        $this->assertFalse($factory->isDynamicFactory());
+        $this->assertFalse($factory->isStaticFactory());
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryDynamic(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $definition->setFactory(TestFactory::class, 'createDynamic');
+
+        $factory = $definition->getFactory();
+
+        $this->assertFalse($factory->isClosureFactory());
+        $this->assertFalse($factory->isInvokableFactory());
+        $this->assertTrue($factory->isDynamicFactory());
+        $this->assertFalse($factory->isStaticFactory());
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryStatic(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $definition->setFactory(TestFactory::class, '::createStatic');
+
+        $factory = $definition->getFactory();
+
+        $this->assertFalse($factory->isClosureFactory());
+        $this->assertFalse($factory->isInvokableFactory());
+        $this->assertFalse($factory->isDynamicFactory());
+        $this->assertTrue($factory->isStaticFactory());
+    }
+
+    public function testSetFactoryStaticForDoubleColon(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $definition->setFactory(TestFactory::class . '::createStatic');
+
+        $factory = $definition->getFactory();
+
+        $this->assertFalse($factory->isClosureFactory());
+        $this->assertFalse($factory->isInvokableFactory());
+        $this->assertFalse($factory->isDynamicFactory());
+        $this->assertTrue($factory->isStaticFactory());
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryWhenAlreadySet(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $definition->setFactory(TestFactory::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Factory is already set for id "%s".',
+                TestInterface::class
+            )
+        );
+
+        $definition->setFactory(TestFactory::class);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryWhenMethodIsStaticAndNotSpecifiedStatic(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Factory method "%s::%s" is static but definition specify not static. Id: "%s".',
+                TestFactory::class,
+                'createStatic',
+                TestInterface::class
+            )
+        );
+
+        $definition->setFactory(TestFactory::class, 'createStatic');
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryWhenMethodIsNotStaticAndSpecifiedStatic(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Factory method "%s::%s" is dynamic but definition specify static. Id: "%s".',
+                TestFactory::class,
+                'createDynamic',
+                TestInterface::class
+            )
+        );
+
+        $definition->setFactory(TestFactory::class, '::createDynamic');
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryWhenMethodDoesNotExist(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Factory class "%s" does not have method "%s". Id: "%s".',
+                TestFactory::class,
+                'unknown',
+                TestInterface::class
+            )
+        );
+
+        $definition->setFactory(TestFactory::class, 'unknown');
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryWhenClosureAndMethodIsSpecified(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'It is not allowed to set method name "%s()" for a closure. Id: "%s".',
+                'notAllowed',
+                TestInterface::class
+            )
+        );
+
+        $definition->setFactory(function (): object {
+            return new stdClass();
+        }, 'notAllowed');
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryWhenStaticFactoryMethodNotSpecified(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Factory method not specified for factory class "%s". Id: "%s".',
+                TestFactory::class,
+                TestInterface::class
+            )
+        );
+
+        $definition->setFactory(TestFactory::class . '::');
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryWhenFactoryMethodNotSpecified(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Factory method not specified for factory class "%s". Id: "%s".',
+                TestFactory::class,
+                TestInterface::class
+            )
+        );
+
+        $definition->setFactory(TestFactory::class, '::');
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    public function testSetFactoryWhenFactoryClassDoesNotExist(): void
+    {
+        $definition = new Definition(TestInterface::class, Test::class);
+
+        $this->expectException(FactoryException::class);
+        $this->expectExceptionMessage(
+            sprintf(
+                'Factory class "%s" does not exist. Id: "%s".',
+                'unknownClass',
+                TestInterface::class
+            )
+        );
+
+        $definition->setFactory('unknownClass');
     }
 }
